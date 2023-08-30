@@ -5,24 +5,24 @@ public class AIChase : MonoBehaviour
     public GameObject Player;
     public float speed;
     public float followZoneRadius = 0.7f;
-    public float followDuration = 3f; // Number of seconds to follow the player after leaving the radius
+    public float followDuration = f;
 
     public Animator animator;
 
     private bool isChasingPlayer;
-    private bool isPlayerInRadius;
     private float timeStartedChasing;
+    private Vector2 lastPosition;
 
-    // Start is called before the first frame update
+
     void Start()
     {
         animator = GetComponent<Animator>();
         isChasingPlayer = false;
-        isPlayerInRadius = false;
         timeStartedChasing = 0f;
+        lastPosition = transform.position;
     }
 
-    // Update is called once per frame
+
     void Update()
     {
         Vector2 direction = Player.transform.position - transform.position;
@@ -30,29 +30,47 @@ public class AIChase : MonoBehaviour
 
         if (distance <= followZoneRadius)
         {
-            isPlayerInRadius = true;
+            isChasingPlayer = true;
+            timeStartedChasing = Time.time;
 
             direction.Normalize();
             transform.position = Vector2.MoveTowards(transform.position, Player.transform.position, speed * Time.deltaTime);
 
-            if (!isChasingPlayer)
+            animator.SetBool("IsMoving", true);
+        }
+        else if (isChasingPlayer)
+        {
+            if (Time.time - timeStartedChasing <= followDuration)
             {
-                isChasingPlayer = true;
-                timeStartedChasing = Time.time;
+                direction.Normalize();
+                transform.position = Vector2.MoveTowards(transform.position, Player.transform.position, speed * Time.deltaTime);
+
                 animator.SetBool("IsMoving", true);
             }
+            else
+            {
+                isChasingPlayer = false;
+                animator.SetBool("IsMoving", false);
+            }
+        }
+
+
+        if ((Vector2)transform.position != lastPosition)
+        {
+            animator.SetBool("IsMoving", true);
         }
         else
         {
-            if (isPlayerInRadius)
-            {
-                if (Time.time - timeStartedChasing >= followDuration)
-                {
-                    isPlayerInRadius = false;
-                    isChasingPlayer = false;
-                    animator.SetBool("IsMoving", false);
-                }
-            }
+            animator.SetBool("IsMoving", false);
         }
+
+        lastPosition = transform.position;
+    }
+
+
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, followZoneRadius);
     }
 }
